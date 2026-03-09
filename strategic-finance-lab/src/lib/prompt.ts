@@ -162,4 +162,3 @@ export const QUESTIONS = [
       "Evaluates which uses of capital generate the strongest economic returns and reinforce the long-term structure of the business.",
   },
 ];
-`;
