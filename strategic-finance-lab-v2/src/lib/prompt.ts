@@ -115,19 +115,23 @@ Given what you now know about this business, what is the window? Is this a busin
 
 ---
 
-After delivering the structured analysis, assess whether a chart would genuinely clarify the economic relationship you have described. If yes, append a chart specification in this exact format — nothing else after it:
+After delivering the structured analysis, decide whether a chart would genuinely clarify the single most important economic relationship you described. Only include a chart if it adds real insight — do not include one for its own sake.
+
+If you do include a chart, you must first introduce it in plain text — one or two sentences explaining what it shows and why it matters for this specific business. For example: "The critical question for this business is whether contribution margin expands as volume grows. The chart below models that trajectory under three scenarios, derived from the spread and cost figures you provided."
+
+Then append the chart specification immediately after that introduction:
 
 <chart>
 {
   "type": "line",
-  "title": "Contribution margin evolution at scale",
-  "subtitle": "Gross margin % as revenue grows from current base",
+  "title": "Contribution margin at scale",
+  "subtitle": "Based on 45bps spread, £85k avg notional, current cost structure",
   "xKey": "revenue",
   "yKey": "margin",
   "yLabel": "Margin %",
   "scenarios": {
     "base": {
-      "summary": "Margin expands modestly as fixed costs are absorbed across higher volume, reaching 34% at 3x scale.",
+      "summary": "Margin expands from 28% to 34% at 3x scale as fixed costs are absorbed — assuming support headcount grows at half the rate of client growth.",
       "data": [
         { "revenue": "Current", "margin": 28 },
         { "revenue": "1.5x", "margin": 30 },
@@ -136,7 +140,7 @@ After delivering the structured analysis, assess whether a chart would genuinely
       ]
     },
     "upside": {
-      "summary": "If implementation becomes productised and support costs flatten, margin reaches 40% at 3x scale.",
+      "summary": "If the hedging corridor reaches natural offset threshold and operational cost per trade falls, margin reaches 40% at 3x scale.",
       "data": [
         { "revenue": "Current", "margin": 28 },
         { "revenue": "1.5x", "margin": 33 },
@@ -145,7 +149,7 @@ After delivering the structured analysis, assess whether a chart would genuinely
       ]
     },
     "downside": {
-      "summary": "If support costs scale linearly with client count, margin stagnates at 29% even at 3x revenue.",
+      "summary": "If support costs scale linearly with trade count and spread compression continues, margin stagnates at 29% even at 3x revenue.",
       "data": [
         { "revenue": "Current", "margin": 28 },
         { "revenue": "1.5x", "margin": 28 },
@@ -157,7 +161,13 @@ After delivering the structured analysis, assess whether a chart would genuinely
 }
 </chart>
 
-Use "line" for metrics that evolve over time or scale. Use "bar" for comparisons across categories or scenarios. Always use Base / Upside / Downside as scenario labels. Always ground the numbers in the actual figures the user provided — do not invent data that contradicts what they told you. The chart should illustrate the single most important economic relationship in the analysis.
+CHART RULES — these are strict:
+- The subtitle must reference actual figures the user gave you (spreads, volumes, margins, headcount — whatever they provided)
+- Each scenario summary must explain the specific assumption driving the difference — not a generic description
+- Numbers must be derived from the user's actual data. If the user gave you a current margin of 32%, your Base case starts at 32% — not an invented number
+- If the user gave you no quantitative data, do not include a chart — state instead what data would be needed to model this
+- Use "line" for metrics that evolve over time or revenue scale. Use "bar" for comparisons across fixed categories
+- The chart must illustrate something already discussed in the analysis — never introduce new concepts through the chart alone
 
 Then say exactly:
 
