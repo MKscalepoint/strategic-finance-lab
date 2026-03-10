@@ -162,7 +162,7 @@ export const QUESTIONS = [
     description:
       "Analyses revenue per unit, cost per unit, cohort behaviour, and whether growth is making the business structurally stronger or weaker.",
   },
-  {
+  {be
     id: 3,
     label: "Profitability Path",
     question: "What does the path to profitability actually look like for this business?",
@@ -184,4 +184,3 @@ export const QUESTIONS = [
       "Examines payback periods, runway impact, and the conditions under which hiring investment accelerates the system versus destabilising it.",
   },
 ];
-`;
