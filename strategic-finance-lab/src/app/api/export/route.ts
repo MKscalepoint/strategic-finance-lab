@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     const buffer = generateExcel(data);
 
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer as unknown as BodyInit, {
       headers: {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
