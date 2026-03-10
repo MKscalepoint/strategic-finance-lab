@@ -287,3 +287,4 @@ function buildAnalysisTranscript(wb: XLSX.WorkBook, data: AnalysisData) {
   const ws = makeSheet(wb, "6. Analysis", rows);
   ws["!cols"] = [col(120)];
 }
+
