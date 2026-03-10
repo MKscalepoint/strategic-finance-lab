@@ -6,9 +6,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const buffer = generateExcel(data);
-    const uint8Array = new Uint8Array(buffer);
+    const arrayBuffer = buffer.buffer.slice(
+      buffer.byteOffset,
+      buffer.byteOffset + buffer.byteLength
+    );
 
-    return new NextResponse(uint8Array, {
+    return new NextResponse(arrayBuffer, {
       headers: {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
