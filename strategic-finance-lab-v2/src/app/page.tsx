@@ -9,7 +9,7 @@ import {
 } from "recharts";
 
 // ── TYPES ──────────────────────────────────────────────────────────────────
-type Stage = "landing" | "subsector" | "intake" | "diagnostic" | "deepdive";
+type Stage = "landing" | "subsector" | "intake" | "diagnostic" | "deepdive" | "complete";
 type EmailStatus = "idle" | "sending" | "sent" | "error";
 type DomainState = "inactive" | "touched" | "active";
 type ScenarioKey = "base" | "upside" | "downside";
@@ -235,6 +235,7 @@ export default function Home() {
   const [summaryStatus, setSummaryStatus] = useState<EmailStatus>("idle");
   const [reportEmail, setReportEmail] = useState("");
   const [reportStatus, setReportStatus] = useState<EmailStatus>("idle");
+  const [collectedEmail, setCollectedEmail] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -279,6 +280,7 @@ export default function Home() {
     setSummaryStatus("idle");
     setReportEmail("");
     setReportStatus("idle");
+    setCollectedEmail("");
   }
 
   async function streamResponse(msgs: Message[], phase: DiagnosticPhase) {
@@ -362,7 +364,26 @@ export default function Home() {
     await streamResponse(newMsgs, "complete");
   }
 
+  async function collectEmail(email: string) {
+    if (!email.trim()) return;
+    setCollectedEmail(email);
+    try {
+      await fetch("/api/collect-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          subsector: SUBSECTORS.find(s => s.id === selectedSubsector)?.label || selectedSubsector,
+          arrBand,
+          biggestConcern,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    } catch { /* silent — don't block UX */ }
+  }
+
   async function sendEmail(email: string, choice: "report" | "both", onSuccess: () => void, onError: () => void) {
+    collectEmail(email);
     const allText = messages.filter(m => m.role === "assistant").map(m => m.content).join("\n\n---\n\n");
     const subsectorLabel = SUBSECTORS.find(s => s.id === selectedSubsector)?.label || "Business";
     try {
@@ -441,11 +462,11 @@ export default function Home() {
 
             {/* Five domains */}
             <div className="opacity-0 animate-fade-up mb-10" style={{ animationFillMode: "forwards", animationDelay: "0.5s" }}>
-              <p className="text-xs font-mono text-accent uppercase tracking-wide mb-4">Five domains assessed</p>
+              <p className="text-xs font-mono text-accent uppercase tracking-widest mb-4">Five domains assessed</p>
               <div className="flex gap-2">
                 {DOMAINS.map(d => (
-                  <div key={d.id} className="flex-1 border border-mist px-3 py-2 text-center">
-                    <p className="text-xs font-mono text-slate leading-tight">{d.short}</p>
+                  <div key={d.id} className="flex-1 border border-slate/40 bg-card px-3 py-3 text-center">
+                    <p className="text-xs font-mono text-ink leading-tight">{d.short}</p>
                   </div>
                 ))}
               </div>
@@ -456,6 +477,12 @@ export default function Home() {
                 className="inline-flex items-center gap-3 bg-card text-ink px-8 py-4 text-sm tracking-wide hover:bg-accent hover:text-paper transition-colors duration-300">
                 Begin diagnostic <ArrowRight size={16} />
               </button>
+            </div>
+
+            {/* SP footer */}
+            <div className="opacity-0 animate-fade-up mt-16 pt-8 border-t border-mist" style={{ animationFillMode: "forwards", animationDelay: "0.75s" }}>
+              <p className="text-xs text-slate mb-1">Built by <a href="https://scalepointpartners.com" target="_blank" rel="noopener noreferrer" className="text-ink hover:text-accent transition-colors">Scalepoint Partners</a></p>
+              <p className="text-xs text-slate">Strategic finance for payments and fintech — <a href="mailto:martin@scalepointpartners.com" className="text-ink hover:text-accent transition-colors">martin@scalepointpartners.com</a></p>
             </div>
           </div>
         </main>
@@ -643,14 +670,9 @@ export default function Home() {
                     {isLastAssistant && (diagnosticPhase === "complete" || messages.filter(m => m.role === "assistant").length >= 4) && stage === "diagnostic" && !streaming && (
                       <div className="mt-8 space-y-4">
                         <div className="border border-accent/20 bg-accent/5 p-5">
-                          <p className="text-sm font-medium text-ink mb-1">Diagnostic complete</p>
-                          <p className="text-xs text-slate mb-4 leading-relaxed">Go deeper on any domain, or receive your Word document summary by email.</p>
-                          <div className="flex gap-3 flex-wrap">
-                            <button onClick={() => setSummaryOpen(true)}
-                              className="inline-flex items-center gap-2 border border-mist text-ink text-xs px-4 py-2.5 hover:bg-card hover:text-ink transition-all">
-                              <FileText size={13} /> Get Word doc summary
-                            </button>
-                          </div>
+                          <p className="text-sm font-medium text-ink mb-2">Diagnostic complete — go deeper</p>
+                          <p className="text-xs text-slate leading-relaxed">Select a domain to explore the structural picture in depth — and see how the economics play out across scenarios.</p>
+  
                         </div>
                         <p className="text-xs font-mono text-slate uppercase tracking-wide">Go deeper on a domain</p>
                         <div className="space-y-2">
@@ -677,7 +699,13 @@ export default function Home() {
                           <p className="text-xs text-slate leading-relaxed">Receive the full Word document and financial model by email.</p>
                         </div>
                         {reportStatus === "sent" ? (
-                          <p className="text-xs text-accent font-medium">✓ Sent — check your inbox.</p>
+                          <div className="space-y-3">
+                            <p className="text-xs text-accent font-medium">✓ Sent — check your inbox.</p>
+                            <button onClick={() => setStage("complete")}
+                              className="inline-flex items-center gap-2 bg-card text-ink text-xs px-4 py-2.5 hover:bg-accent hover:text-paper transition-colors">
+                              Finish <ArrowRight size={12} />
+                            </button>
+                          </div>
                         ) : (
                           <div className="flex gap-2">
                             <input type="email" value={reportEmail} onChange={e => setReportEmail(e.target.value)}
@@ -693,7 +721,11 @@ export default function Home() {
                           </div>
                         )}
                         {reportStatus === "error" && <p className="text-xs text-red-500">Something went wrong.</p>}
-                        <button onClick={reset} className="text-xs text-slate hover:text-ink transition-colors">← Return home</button>
+                        {reportStatus !== "sent" && (
+                          <button onClick={() => setStage("complete")} className="text-xs text-slate hover:text-ink transition-colors">
+                            Skip → finish
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -718,6 +750,46 @@ export default function Home() {
               )}
 
               <div ref={messagesEndRef} />
+            </div>
+          </div>
+        </main>
+      )}
+
+      {/* ── COMPLETION SCREEN ── */}
+      {stage === "complete" && (
+        <main className="min-h-screen flex flex-col items-center justify-center px-6">
+          <div className="max-w-lg mx-auto w-full">
+            <div className="opacity-0 animate-fade-up" style={{ animationFillMode: "forwards", animationDelay: "0.1s" }}>
+              <p className="font-mono text-xs text-accent tracking-widest uppercase mb-6">Scaler · Diagnostic complete</p>
+            </div>
+            <div className="opacity-0 animate-fade-up" style={{ animationFillMode: "forwards", animationDelay: "0.2s" }}>
+              <h1 className="font-display text-4xl font-medium text-ink mb-5 leading-tight">Thank you.</h1>
+            </div>
+            <div className="opacity-0 animate-fade-up" style={{ animationFillMode: "forwards", animationDelay: "0.3s" }}>
+              <p className="text-slate text-base mb-3 leading-relaxed">
+                Your report and financial model are on their way to your inbox.
+              </p>
+              <p className="text-slate text-base mb-8 leading-relaxed">
+                If anything in the diagnostic raised a question you want to think through further, I am happy to do that with you — no charge, no pitch. Scaler is designed to surface the right questions; sometimes the most useful thing is a 30-minute conversation to work through what they mean for your specific situation.
+              </p>
+            </div>
+
+            <div className="opacity-0 animate-fade-up border border-mist p-6 mb-8" style={{ animationFillMode: "forwards", animationDelay: "0.4s" }}>
+              <p className="text-xs font-mono text-accent uppercase tracking-wide mb-4">Get in touch</p>
+              <p className="text-sm font-medium text-ink mb-1">Martin Kode</p>
+              <p className="text-xs text-slate mb-3">Founder, Scalepoint Partners</p>
+              <div className="space-y-2">
+                <p className="text-sm text-ink">
+                  <a href="mailto:martin@scalepointpartners.com" className="hover:text-accent transition-colors">martin@scalepointpartners.com</a>
+                </p>
+                <p className="text-sm text-ink">
+                  <a href="https://scalepointpartners.com" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors">scalepointpartners.com</a>
+                </p>
+              </div>
+            </div>
+
+            <div className="opacity-0 animate-fade-up" style={{ animationFillMode: "forwards", animationDelay: "0.5s" }}>
+              <button onClick={reset} className="text-xs text-slate hover:text-ink transition-colors">← Run another diagnostic</button>
             </div>
           </div>
         </main>
