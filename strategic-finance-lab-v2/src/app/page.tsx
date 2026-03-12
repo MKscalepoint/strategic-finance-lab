@@ -134,7 +134,7 @@ function renderMarkdown(text: string): string {
 function ChartBlock({ spec }: { spec: ChartSpec }) {
   const [active, setActive] = useState<ScenarioKey>("base");
   const scenario = spec.scenarios[active];
-  const COLORS = { base: "#2E4057", upside: "#1a9a5c", downside: "#c0392b" };
+  const COLORS = { base: "#ECFFE3", upside: "#A8F090", downside: "#FF8B8B" };
 
   return (
     <div className="my-6 border border-mist bg-card/60 p-5">
@@ -147,7 +147,7 @@ function ChartBlock({ spec }: { spec: ChartSpec }) {
           {(["base", "upside", "downside"] as ScenarioKey[]).map(s => (
             <button key={s} onClick={() => setActive(s)}
               className={`px-3 py-1 text-xs font-mono tracking-wide border transition-all ${active === s
-                ? s === "base" ? "bg-ink text-paper border-ink"
+                ? s === "base" ? "bg-card text-ink border-ink"
                 : s === "upside" ? "bg-green-600 text-white border-green-600"
                 : "bg-red-600 text-white border-red-600"
                 : "bg-transparent text-slate border-mist hover:border-slate"}`}>
@@ -187,7 +187,7 @@ function ChartBlock({ spec }: { spec: ChartSpec }) {
 // ── FRAMEWORK MAP ──────────────────────────────────────────────────────────
 function FrameworkMap({ domainStates }: { domainStates: Record<number, DomainState> }) {
   return (
-    <div className="border-b border-mist bg-ink/95 px-6 py-3">
+    <div className="border-b border-mist bg-paper/95 px-6 py-3">
       <div className="max-w-5xl mx-auto flex items-center gap-2">
         <span className="text-xs font-mono text-slate/40 uppercase tracking-widest mr-2 hidden sm:block">Framework</span>
         <div className="flex flex-1 gap-2">
@@ -393,7 +393,7 @@ export default function Home() {
 
       {/* HEADER */}
       {showHeader && (
-        <header className="fixed top-0 left-0 right-0 z-50 bg-ink/95 backdrop-blur-sm">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-paper/95 backdrop-blur-sm">
           <div className="border-b border-mist">
             <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
               <button onClick={reset} className="font-display text-lg font-medium tracking-tight text-ink hover:text-accent transition-colors">Scaler</button>
@@ -453,7 +453,7 @@ export default function Home() {
 
             <div className="opacity-0 animate-fade-up" style={{ animationFillMode: "forwards", animationDelay: "0.6s" }}>
               <button onClick={() => setStage("subsector")}
-                className="inline-flex items-center gap-3 bg-ink text-paper px-8 py-4 text-sm tracking-wide hover:bg-accent transition-colors duration-300">
+                className="inline-flex items-center gap-3 bg-card text-ink px-8 py-4 text-sm tracking-wide hover:bg-accent hover:text-paper transition-colors duration-300">
                 Begin diagnostic <ArrowRight size={16} />
               </button>
             </div>
@@ -527,7 +527,7 @@ export default function Home() {
                     className="w-full border border-mist bg-card/60 px-4 py-2.5 text-sm text-ink placeholder-slate/50 focus:outline-none focus:border-accent resize-none" />
                   <button disabled={!revenueModel}
                     onClick={() => { setIntakeStep(1); }}
-                    className="w-full bg-ink text-paper text-sm py-3 hover:bg-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                    className="w-full bg-card text-ink text-sm py-3 hover:bg-accent hover:text-paper transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                     Next <ArrowRight size={14} />
                   </button>
                 </>
@@ -569,7 +569,7 @@ export default function Home() {
                   <div className="flex items-center justify-between">
                     <button onClick={() => setIntakeStep(2)} className="text-sm text-slate hover:text-ink transition-colors">← Back</button>
                     <button onClick={startDiagnostic} disabled={!promptText.trim()}
-                      className="inline-flex items-center gap-3 bg-ink text-paper px-8 py-3 text-sm tracking-wide hover:bg-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                      className="inline-flex items-center gap-3 bg-card text-ink px-8 py-3 text-sm tracking-wide hover:bg-accent hover:text-paper transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
                       Start diagnostic <ArrowRight size={15} />
                     </button>
                   </div>
@@ -628,7 +628,7 @@ export default function Home() {
                           className="w-full border border-mist bg-card/60 px-3 py-2 text-xs text-ink placeholder-slate/50 focus:outline-none focus:border-accent resize-none" />
                         <div className="flex gap-3">
                           <button disabled={!selectedOption || streaming} onClick={submitOption}
-                            className="flex-1 bg-ink text-paper text-xs py-2.5 hover:bg-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                            className="flex-1 bg-card text-ink text-xs py-2.5 hover:bg-accent hover:text-paper transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             Continue <ArrowRight size={13} />
                           </button>
                           <button onClick={() => setSummaryOpen(true)}
@@ -647,7 +647,7 @@ export default function Home() {
                           <p className="text-xs text-slate mb-4 leading-relaxed">Go deeper on any domain, or receive your Word document summary by email.</p>
                           <div className="flex gap-3 flex-wrap">
                             <button onClick={() => setSummaryOpen(true)}
-                              className="inline-flex items-center gap-2 border border-ink text-ink text-xs px-4 py-2.5 hover:bg-ink hover:text-paper transition-all">
+                              className="inline-flex items-center gap-2 border border-mist text-ink text-xs px-4 py-2.5 hover:bg-card hover:text-ink transition-all">
                               <FileText size={13} /> Get Word doc summary
                             </button>
                           </div>
@@ -725,7 +725,7 @@ export default function Home() {
 
       {/* ── SUMMARY MODAL ── */}
       {summaryOpen && (
-        <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50 flex items-center justify-center px-6">
+        <div className="fixed inset-0 bg-paper/80 backdrop-blur-sm z-50 flex items-center justify-center px-6">
           <div className="bg-paper border border-mist p-6 w-full max-w-sm shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm font-medium text-ink">Get Word doc summary</p>
