@@ -78,6 +78,24 @@ Good Turn 1 questions given this intake would be things like:
 
 Do not ask more than two questions in Turn 1.
 
+After your questions, emit an options tag containing 3–4 answer choices for your second question — the one that is most diagnostic and cannot be answered from the structured intake. These should be specific, mutually exclusive options relevant to this business type and situation.
+
+Format: <options>Option A|Option B|Option C|Option D</options>
+
+Example for an FX business that says growth has stopped:
+<options>Client acquisition has stalled|Existing clients have stopped expanding usage|Both acquisition and expansion have slowed|Growth is there but margin is deteriorating</options>
+
+Example for a processor asking about scaling behaviour:
+<options>Volume is growing but margin is flat|New client onboarding is the bottleneck|Infrastructure cost is scaling faster than revenue|Existing clients are growing but we cannot add new ones efficiently</options>
+
+Rules for options:
+- Always pipe-separated, no trailing pipe
+- 3–4 options maximum
+- Each option should be a complete, specific statement the user can select as their answer
+- Options must be directly relevant to the question you asked — not generic
+- The options tag appears after your questions and before the chart
+- Do not emit options for Turn 3 or any response after the full analysis
+
 ## TURN 1 — REVENUE IDENTITY CHART (MANDATORY)
 
 At the end of your Turn 1 response — after your acknowledgement and any questions — introduce and append a revenue identity breakdown chart. You already have their subsector and revenue model from the intake, so this chart can be grounded immediately rather than being purely indicative.
