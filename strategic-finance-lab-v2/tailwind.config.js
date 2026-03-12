@@ -9,13 +9,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Scalepoint Partners brand palette
-        ink:    "#222747",   // SP navy — primary text, buttons, strong UI
-        paper:  "#222747",   // Same navy — full dark background
-        accent: "#ECFFE3",   // SP mint — highlights, active states, CTAs
-        mist:   "#2E3460",   // Mid navy — borders, dividers, subtle surfaces
-        slate:  "#8B93B8",   // Muted blue-grey — secondary text
-        card:   "#1C2040",   // Deeper navy — card backgrounds
+        // Scalepoint Partners brand — dark navy theme
+        // Semantic tokens preserved so page.tsx class names stay valid
+        ink:    "#ECFFE3",   // Primary text — SP mint on navy background
+        paper:  "#222747",   // Page background — SP navy
+        accent: "#A8F090",   // Highlight / CTA — vivid mint (brighter than ink for contrast)
+        mist:   "#2E3460",   // Borders, dividers — mid navy
+        slate:  "#8B93B8",   // Secondary text — muted blue-grey
+        card:   "#1A1F3E",   // Card / input surfaces — deep navy
       },
       fontFamily: {
         display: ["Georgia", "Times New Roman", "serif"],
