@@ -75,8 +75,8 @@ const VERDICT_STYLES: Record<string, { dot: string; text: string; bg: string }> 
   "STRUCTURALLY SOUND": { dot: "🟢", text: "text-green-700", bg: "bg-green-50 border-green-200" },
   "UNDER PRESSURE": { dot: "🟡", text: "text-amber-700", bg: "bg-amber-50 border-amber-200" },
   "CRITICAL CONSTRAINT": { dot: "🔴", text: "text-red-700", bg: "bg-red-50 border-red-200" },
-  "INSUFFICIENT DATA": { dot: "⚪", text: "text-slate", bg: "bg-mist/40 border-mist" },
-  "PENDING": { dot: "⚪", text: "text-slate/50", bg: "bg-mist/20 border-mist/50" },
+  "INSUFFICIENT DATA": { dot: "⚪", text: "text-slate", bg: "bg-card/60 border-mist" },
+  "PENDING": { dot: "⚪", text: "text-slate/50", bg: "bg-card/30 border-mist/50" },
 };
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
@@ -137,7 +137,7 @@ function ChartBlock({ spec }: { spec: ChartSpec }) {
   const COLORS = { base: "#2E4057", upside: "#1a9a5c", downside: "#c0392b" };
 
   return (
-    <div className="my-6 border border-mist bg-white/70 p-5">
+    <div className="my-6 border border-mist bg-card/60 p-5">
       <div className="flex items-start justify-between mb-4">
         <div>
           <p className="text-sm font-medium text-ink">{spec.title}</p>
@@ -159,18 +159,18 @@ function ChartBlock({ spec }: { spec: ChartSpec }) {
       <ResponsiveContainer width="100%" height={220}>
         {spec.type === "line" ? (
           <LineChart data={scenario.data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#2E3460" />
             <XAxis dataKey={spec.xKey} tick={{ fontSize: 11, fill: "#888" }} />
             <YAxis tick={{ fontSize: 11, fill: "#888" }} label={spec.yLabel ? { value: spec.yLabel, angle: -90, position: "insideLeft", style: { fontSize: 10, fill: "#aaa" } } : undefined} />
-            <Tooltip contentStyle={{ fontSize: 12, border: "1px solid #e5e5e5" }} />
+            <Tooltip contentStyle={{ fontSize: 12, border: "1px solid #2E3460", backgroundColor: "#1C2040", color: "#ECFFE3" }} />
             <Line type="monotone" dataKey={spec.yKey} stroke={COLORS[active]} strokeWidth={2} dot={{ r: 3 }} />
           </LineChart>
         ) : (
           <BarChart data={scenario.data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#2E3460" />
             <XAxis dataKey={spec.xKey} tick={{ fontSize: 11, fill: "#888" }} />
             <YAxis tick={{ fontSize: 11, fill: "#888" }} />
-            <Tooltip contentStyle={{ fontSize: 12, border: "1px solid #e5e5e5" }} />
+            <Tooltip contentStyle={{ fontSize: 12, border: "1px solid #2E3460", backgroundColor: "#1C2040", color: "#ECFFE3" }} />
             <Bar dataKey={spec.yKey} fill={COLORS[active]} radius={[2, 2, 0, 0]} />
           </BarChart>
         )}
@@ -187,7 +187,7 @@ function ChartBlock({ spec }: { spec: ChartSpec }) {
 // ── FRAMEWORK MAP ──────────────────────────────────────────────────────────
 function FrameworkMap({ domainStates }: { domainStates: Record<number, DomainState> }) {
   return (
-    <div className="border-b border-mist bg-paper/95 px-6 py-3">
+    <div className="border-b border-mist bg-ink/95 px-6 py-3">
       <div className="max-w-5xl mx-auto flex items-center gap-2">
         <span className="text-xs font-mono text-slate/40 uppercase tracking-widest mr-2 hidden sm:block">Framework</span>
         <div className="flex flex-1 gap-2">
@@ -305,9 +305,13 @@ export default function Home() {
       setMessages(finalMessages);
       setStreamedText("");
       updateDomains(accumulated);
-      const opts = extractOptions(accumulated);
-      if (opts.length > 0) { setInlineOptions(opts); setSelectedOption(""); setOptionFreeText(""); }
-      if (phase === "q3" || accumulated.toLowerCase().includes("enter your email below")) {
+      // Only set options if this is a question phase (not the final diagnostic)
+      if (phase !== "complete") {
+        const opts = extractOptions(accumulated);
+        if (opts.length > 0) { setInlineOptions(opts); setSelectedOption(""); setOptionFreeText(""); }
+      }
+      // Phase advances are driven by submitOption — only mark complete after Q3 response
+      if (phase === "complete") {
         setDiagnosticPhase("complete");
       }
     } catch {
@@ -330,8 +334,8 @@ export default function Home() {
     const msgs: Message[] = [{ role: "user", content: initialMessage }];
     setMessages(msgs);
     setStage("diagnostic");
+    setDiagnosticPhase("q1");
     await streamResponse(msgs, "q1");
-    setDiagnosticPhase("q2");
   }
 
   async function submitOption() {
@@ -342,7 +346,9 @@ export default function Home() {
     setInlineOptions([]);
     setSelectedOption("");
     setOptionFreeText("");
-    const nextPhase: DiagnosticPhase = diagnosticPhase === "q1" ? "q2" : diagnosticPhase === "q2" ? "q3" : "complete";
+    // Advance phase: q1→q2, q2→q3, q3→complete (complete means deliver full diagnostic)
+    const phaseMap: Record<DiagnosticPhase, DiagnosticPhase> = { q1: "q2", q2: "q3", q3: "complete", complete: "complete" };
+    const nextPhase = phaseMap[diagnosticPhase];
     setDiagnosticPhase(nextPhase);
     await streamResponse(newMsgs, nextPhase);
   }
@@ -387,7 +393,7 @@ export default function Home() {
 
       {/* HEADER */}
       {showHeader && (
-        <header className="fixed top-0 left-0 right-0 z-50 bg-paper/95 backdrop-blur-sm">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-ink/95 backdrop-blur-sm">
           <div className="border-b border-mist">
             <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
               <button onClick={reset} className="font-display text-lg font-medium tracking-tight text-ink hover:text-accent transition-colors">Scaler</button>
@@ -468,7 +474,7 @@ export default function Home() {
               {SUBSECTORS.map(s => (
                 <button key={s.id}
                   onClick={() => { setSelectedSubsector(s.id); setIntakeStep(0); setStage("intake"); }}
-                  className="w-full text-left border border-mist bg-paper hover:border-accent hover:bg-white/60 transition-all px-5 py-4 group flex items-center justify-between">
+                  className="w-full text-left border border-mist bg-paper hover:border-accent hover:bg-card/60 transition-all px-5 py-4 group flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-ink group-hover:text-accent transition-colors">{s.label}</p>
                     <p className="text-xs text-slate mt-0.5">{s.desc}</p>
@@ -511,14 +517,14 @@ export default function Home() {
                   <div className="space-y-2">
                     {(Q1_OPTIONS[selectedSubsector] || []).map(r => (
                       <button key={r} onClick={() => setRevenueModel(prev => prev === r ? "" : r)}
-                        className={`w-full text-left border px-5 py-3.5 text-sm transition-all flex justify-between items-center ${revenueModel === r ? "border-accent bg-accent/10 text-accent" : "border-mist text-ink hover:border-accent hover:bg-white/60"}`}>
+                        className={`w-full text-left border px-5 py-3.5 text-sm transition-all flex justify-between items-center ${revenueModel === r ? "border-accent bg-accent/10 text-accent" : "border-mist text-ink hover:border-accent hover:bg-card/60"}`}>
                         {r} {revenueModel === r && <span className="text-xs">✓</span>}
                       </button>
                     ))}
                   </div>
                   <textarea value={q1FreeText} onChange={e => setQ1FreeText(e.target.value)}
                     placeholder="Add more detail (optional)…" rows={2}
-                    className="w-full border border-mist bg-white/60 px-4 py-2.5 text-sm text-ink placeholder-slate/50 focus:outline-none focus:border-accent resize-none" />
+                    className="w-full border border-mist bg-card/60 px-4 py-2.5 text-sm text-ink placeholder-slate/50 focus:outline-none focus:border-accent resize-none" />
                   <button disabled={!revenueModel}
                     onClick={() => { setIntakeStep(1); }}
                     className="w-full bg-ink text-paper text-sm py-3 hover:bg-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
@@ -531,7 +537,7 @@ export default function Home() {
                 <div className="space-y-2">
                   {ARR_BANDS.map(a => (
                     <button key={a} onClick={() => { setArrBand(a); setIntakeStep(2); }}
-                      className="w-full text-left border border-mist px-5 py-3.5 text-sm text-ink hover:border-accent hover:text-accent hover:bg-white/60 transition-all flex justify-between items-center">
+                      className="w-full text-left border border-mist px-5 py-3.5 text-sm text-ink hover:border-accent hover:text-accent hover:bg-card/60 transition-all flex justify-between items-center">
                       {a} <ArrowRight size={14} className="text-mist" />
                     </button>
                   ))}
@@ -542,7 +548,7 @@ export default function Home() {
                 <div className="space-y-2">
                   {(CONCERNS[selectedSubsector] || []).map(c => (
                     <button key={c} onClick={() => { setBiggestConcern(c); setIntakeStep(3); }}
-                      className="w-full text-left border border-mist px-5 py-3.5 text-sm text-ink hover:border-accent hover:text-accent hover:bg-white/60 transition-all flex justify-between items-center">
+                      className="w-full text-left border border-mist px-5 py-3.5 text-sm text-ink hover:border-accent hover:text-accent hover:bg-card/60 transition-all flex justify-between items-center">
                       {c} <ArrowRight size={14} className="text-mist" />
                     </button>
                   ))}
@@ -551,7 +557,7 @@ export default function Home() {
 
               {intakeStep === 3 && (
                 <div className="space-y-4">
-                  <div className="text-xs text-slate space-y-1 p-3 bg-mist/30 border border-mist">
+                  <div className="text-xs text-slate space-y-1 p-3 bg-card/40 border border-mist">
                     <p><span className="text-ink font-medium">Subsector:</span> {SUBSECTORS.find(s => s.id === selectedSubsector)?.label}</p>
                     <p><span className="text-ink font-medium">Revenue model:</span> {revenueModel}</p>
                     <p><span className="text-ink font-medium">Scale:</span> {arrBand}</p>
@@ -559,7 +565,7 @@ export default function Home() {
                   </div>
                   <textarea value={promptText} onChange={e => setPromptText(e.target.value)}
                     placeholder="Tell us what is happening in the business right now — what has brought you to this diagnostic?"
-                    rows={5} className="w-full border border-mist bg-white/60 px-4 py-3 text-sm text-ink placeholder-slate/50 focus:outline-none focus:border-accent resize-none" />
+                    rows={5} className="w-full border border-mist bg-card/60 px-4 py-3 text-sm text-ink placeholder-slate/50 focus:outline-none focus:border-accent resize-none" />
                   <div className="flex items-center justify-between">
                     <button onClick={() => setIntakeStep(2)} className="text-sm text-slate hover:text-ink transition-colors">← Back</button>
                     <button onClick={startDiagnostic} disabled={!promptText.trim()}
@@ -592,7 +598,7 @@ export default function Home() {
                   if (i === 0) return null;
                   return (
                     <div key={i} className="animate-fade-in pl-12">
-                      <div className="bg-mist/50 border border-mist px-5 py-4">
+                      <div className="bg-card/80 border border-mist px-5 py-4">
                         <p className="text-xs font-mono text-slate mb-2 uppercase tracking-wide">You</p>
                         <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{m.content}</p>
                       </div>
@@ -607,19 +613,19 @@ export default function Home() {
                     {chart && <ChartBlock spec={chart} />}
 
                     {/* Options — shown on last message while awaiting answer */}
-                    {isLastAssistant && inlineOptions.length > 0 && !streaming && diagnosticPhase !== "complete" && (
+                    {isLastAssistant && inlineOptions.length > 0 && !streaming && diagnosticPhase !== "complete" && messages.filter(m => m.role === "assistant").length < 4 && (
                       <div className="mt-6 space-y-3">
                         <div className="space-y-2">
                           {inlineOptions.map(opt => (
                             <button key={opt} onClick={() => setSelectedOption(prev => prev === opt ? "" : opt)}
-                              className={`w-full text-left px-4 py-3 text-sm border transition-all ${selectedOption === opt ? "border-accent bg-accent/10 text-accent" : "border-mist text-ink hover:border-accent hover:bg-white/60"}`}>
+                              className={`w-full text-left px-4 py-3 text-sm border transition-all ${selectedOption === opt ? "border-accent bg-accent/10 text-accent" : "border-mist text-ink hover:border-accent hover:bg-card/60"}`}>
                               {opt}
                             </button>
                           ))}
                         </div>
                         <textarea value={optionFreeText} onChange={e => setOptionFreeText(e.target.value)}
                           placeholder="Add more detail (optional)…" rows={2}
-                          className="w-full border border-mist bg-white/60 px-3 py-2 text-xs text-ink placeholder-slate/50 focus:outline-none focus:border-accent resize-none" />
+                          className="w-full border border-mist bg-card/60 px-3 py-2 text-xs text-ink placeholder-slate/50 focus:outline-none focus:border-accent resize-none" />
                         <div className="flex gap-3">
                           <button disabled={!selectedOption || streaming} onClick={submitOption}
                             className="flex-1 bg-ink text-paper text-xs py-2.5 hover:bg-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
@@ -634,7 +640,7 @@ export default function Home() {
                     )}
 
                     {/* Deep dive domain selection — shown after diagnostic complete */}
-                    {isLastAssistant && diagnosticPhase === "complete" && stage === "diagnostic" && !streaming && (
+                    {isLastAssistant && (diagnosticPhase === "complete" || messages.filter(m => m.role === "assistant").length >= 4) && stage === "diagnostic" && !streaming && (
                       <div className="mt-8 space-y-4">
                         <div className="border border-accent/20 bg-accent/5 p-5">
                           <p className="text-sm font-medium text-ink mb-1">Diagnostic complete</p>
@@ -650,7 +656,7 @@ export default function Home() {
                         <div className="space-y-2">
                           {DOMAINS.map(d => (
                             <button key={d.id} onClick={() => startDeepDive(d)}
-                              className="w-full text-left border border-mist px-5 py-4 hover:border-accent hover:bg-white/60 transition-all group flex items-center justify-between">
+                              className="w-full text-left border border-mist px-5 py-4 hover:border-accent hover:bg-card/60 transition-all group flex items-center justify-between">
                               <div>
                                 <p className="text-xs font-mono text-accent mb-1">{String(d.id).padStart(2, "0")}</p>
                                 <p className="text-sm font-medium text-ink group-hover:text-accent transition-colors">{d.label}</p>
