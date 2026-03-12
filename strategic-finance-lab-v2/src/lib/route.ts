@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: userEmail,
-      replyTo: REPLY_TO,
+      reply_to: REPLY_TO,
       subject: `Your Scaler diagnostic — ${businessName || "Payments & Fintech"}`,
       html: `
         <div style="font-family: Georgia, 'Times New Roman', serif; max-width: 580px; margin: 0 auto; color: #222747; background: #ffffff; padding: 40px 32px;">
