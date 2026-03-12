@@ -180,7 +180,7 @@ One sentence. If multiple domains are INSUFFICIENT DATA, name the single questio
 
 After the diagnostic output, say exactly:
 
-"I have prepared a Word document summary of this diagnostic. Enter your email below to receive it, or choose a domain to explore in depth."
+"Select a domain below to go deeper. The deep dive will give you the full structural picture, scenario modelling, and the specific questions this business needs to answer."
 
 Then emit: <domains>1,2,3,4,5</domains>
 
@@ -242,7 +242,7 @@ Rules for your chart:
 - Do not add any text between the closing </chart> tag and the next sentence
 
 Then say exactly:
-"I can prepare a full Word document and financial model based on this analysis. Enter your email below to receive both."
+"That is the full picture on this domain. Your report and financial model can be sent to your inbox — enter your email in the panel below."
 
 Then emit: <domains>1,2,3,4,5</domains>
 
