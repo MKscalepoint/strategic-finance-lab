@@ -56,6 +56,29 @@ const CONCERNS: Record<string, string[]> = {
 
 const DEFAULT_CONCERNS = ["Margin pressure", "Cost structure", "Capital efficiency", "Team scaling", "Revenue quality"];
 
+// Q1 multiple choice options per subsector (what the business does / how it works)
+const Q1_OPTIONS: Record<string, string[]> = {
+  processor: ["Card acquiring for merchants", "Payment switching / routing", "Gateway services only", "Full-stack acquiring + gateway", "White-label processing for other issuers"],
+  fx: ["FX forwards / hedging for corporates", "Remittance / consumer cross-border", "B2B international payments platform", "Treasury infrastructure / FX-as-a-service", "Multi-currency accounts + FX execution"],
+  merchant: ["POS hardware + payments for SMEs", "Online checkout / e-commerce payments", "Marketplace payments infrastructure", "Vertical SaaS with embedded payments", "Multi-channel merchant acquiring"],
+  infrastructure: ["Core banking platform (SaaS)", "Banking infrastructure / BaaS platform", "Payments infrastructure for fintechs", "Ledger / money movement infrastructure", "Compliance and regulatory infrastructure"],
+  baas: ["Embedded banking for non-financial brands", "Lending-as-a-service", "Card issuing for fintechs", "Savings / deposits infrastructure", "Full-stack BaaS (accounts + cards + payments)"],
+  issuing: ["Prepaid programme management", "Credit card issuing", "Corporate / expense card programme", "Virtual card infrastructure", "Debit card programme for fintechs"],
+  openbanking: ["Payment initiation (PIS)", "Account information services (AIS)", "Variable recurring payments (VRP)", "Open banking data platform", "Account-to-account checkout product"],
+};
+
+// Extract <options> tag from model response
+function extractOptions(text: string): string[] {
+  const match = text.match(/<options>([\s\S]*?)<\/options>/);
+  if (!match) return [];
+  return match[1].split("|").map(s => s.trim()).filter(Boolean);
+}
+
+// Strip <options> tag from displayed text  
+function stripOptionsTag(text: string): string {
+  return text.replace(/<options>[\s\S]*?<\/options>/g, "").trim();
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -151,16 +174,13 @@ function stripDomainTag(text: string): string {
   return text.replace(/<domains>[\d,\s]*<\/domains>/g, "").trim();
 }
 
-// During streaming: hide any partial or complete chart block so raw JSON never shows
+// During streaming: hide any partial or complete chart/options block so raw JSON never shows
 function hideChartBlock(text: string): string {
-  // Remove complete chart blocks
   let clean = text.replace(/<chart>[\s\S]*?<\/chart>/g, "");
-  // Also hide from the opening <chart> tag onwards if block is incomplete (streaming)
   const partialStart = clean.indexOf("<chart>");
-  if (partialStart !== -1) {
-    clean = clean.substring(0, partialStart);
-  }
-  return stripDomainTag(clean).trim();
+  if (partialStart !== -1) clean = clean.substring(0, partialStart);
+  clean = stripOptionsTag(stripDomainTag(clean));
+  return clean.trim();
 }
 
 // Extract chart JSON and strip all hidden tags from text
@@ -170,9 +190,9 @@ function extractChart(text: string): { clean: string; chart: ChartSpec | null } 
   if (match) {
     try { chart = JSON.parse(match[1].trim()) as ChartSpec; } catch {}
   }
-  const clean = stripDomainTag(
+  const clean = stripOptionsTag(stripDomainTag(
     text.replace(/<chart>[\s\S]*?<\/chart>/g, "")
-  ).trim();
+  )).trim();
   return { clean, chart };
 }
 
@@ -288,6 +308,14 @@ export default function Home() {
   const [floatingEmail, setFloatingEmail] = useState("");
   const [floatingStatus, setFloatingStatus] = useState<EmailStatus>("idle");
   const [domainStates, setDomainStates] = useState<Record<number, DomainState>>({});
+  const [q1Answer, setQ1Answer] = useState("");
+  const [q1FreeText, setQ1FreeText] = useState("");
+  const [inlineOptions, setInlineOptions] = useState<string[]>([]);
+  const [selectedOption, setSelectedOption] = useState("");
+  const [optionFreeText, setOptionFreeText] = useState("");
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryEmail, setSummaryEmail] = useState("");
+  const [summaryStatus, setSummaryStatus] = useState<EmailStatus>("idle");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const intakeTopRef = useRef<HTMLDivElement>(null);
@@ -364,6 +392,15 @@ export default function Home() {
       setMessages(finalMessages);
       setStreamedText("");
       updateDomains(accumulated, primaryId ?? selectedQ.id);
+      // Detect model-emitted options for Q2
+      const opts = extractOptions(accumulated);
+      if (opts.length > 0) {
+        setInlineOptions(opts);
+        setSelectedOption("");
+        setOptionFreeText("");
+      } else {
+        setInlineOptions([]);
+      }
       if (
         accumulated.toLowerCase().includes("send them to you directly") ||
         accumulated.toLowerCase().includes("supporting model") ||
@@ -408,6 +445,31 @@ export default function Home() {
       setEmailStatus("sent");
     } catch {
       setEmailStatus("error");
+    }
+  }
+
+  async function sendSummary() {
+    if (!selectedQ || !summaryEmail.trim() || summaryStatus === "sending") return;
+    setSummaryStatus("sending");
+    const allText = messages.filter(m => m.role === "assistant").map(m => m.content).join("\n\n---\n\n");
+    try {
+      const res = await fetch("/api/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userEmail: summaryEmail.trim(),
+          question: selectedQ.question,
+          businessName: businessName || SUBSECTORS.find(s => s.id === selectedSubsector)?.label || "Business",
+          context: businessContext,
+          findings: allText,
+          choice: "report",
+          timestamp: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }),
+        }),
+      });
+      if (!res.ok) throw new Error("Send failed");
+      setSummaryStatus("sent");
+    } catch {
+      setSummaryStatus("error");
     }
   }
 
@@ -459,6 +521,14 @@ export default function Home() {
     setFloatingEmail("");
     setFloatingStatus("idle");
     setDomainStates({});
+    setQ1Answer("");
+    setQ1FreeText("");
+    setInlineOptions([]);
+    setSelectedOption("");
+    setOptionFreeText("");
+    setSummaryOpen(false);
+    setSummaryEmail("");
+    setSummaryStatus("idle");
   }
 
   function FrameworkMap() {
@@ -665,13 +735,29 @@ export default function Home() {
               </div>
 
               {intakeStep === 0 && (
-                <div className="space-y-2 animate-fade-in">
-                  {REVENUE_MODELS.map(r => (
-                    <button key={r} onClick={() => { setRevenueModel(r); setIntakeStep(1); }}
-                      className="w-full text-left border border-mist px-5 py-3.5 text-sm text-ink hover:border-accent hover:text-accent hover:bg-white/60 transition-all group flex justify-between items-center">
-                      {r} <ArrowRight size={14} className="text-mist group-hover:text-accent transition-colors" />
-                    </button>
-                  ))}
+                <div className="space-y-3 animate-fade-in">
+                  <div className="space-y-2">
+                    {(Q1_OPTIONS[selectedSubsector] || REVENUE_MODELS).map(r => (
+                      <button key={r} onClick={() => setQ1Answer(prev => prev === r ? "" : r)}
+                        className={`w-full text-left border px-5 py-3.5 text-sm transition-all flex justify-between items-center ${q1Answer === r ? "border-accent bg-accent/10 text-accent" : "border-mist text-ink hover:border-accent hover:text-accent hover:bg-white/60"}`}>
+                        {r}
+                        {q1Answer === r && <span className="text-accent text-xs">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={q1FreeText}
+                    onChange={e => setQ1FreeText(e.target.value)}
+                    placeholder="Add more detail (optional)…"
+                    rows={2}
+                    className="w-full border border-mist bg-white/60 px-4 py-2.5 text-sm text-ink placeholder-slate/50 focus:outline-none focus:border-accent transition-colors resize-none"
+                  />
+                  <button
+                    disabled={!q1Answer}
+                    onClick={() => { setRevenueModel(q1Answer + (q1FreeText ? ` — ${q1FreeText}` : "")); setIntakeStep(1); }}
+                    className="w-full bg-ink text-paper text-sm py-3 hover:bg-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                    Next <ArrowRight size={14} />
+                  </button>
                 </div>
               )}
 
@@ -731,6 +817,7 @@ export default function Home() {
           <div className="flex-1 overflow-y-auto px-6 py-8">
             <div className="max-w-3xl mx-auto space-y-8">
               {messages.map((m, i) => {
+                const isLastAssistant = m.role === "assistant" && i === messages.length - 1;
                 if (m.role === "user") {
                   return (
                     <div key={i} className="animate-fade-in pl-12">
@@ -747,6 +834,68 @@ export default function Home() {
                     <p className="text-xs font-mono text-accent mb-3 uppercase tracking-wide">Scaler</p>
                     <div className="prose-analysis text-sm text-ink" dangerouslySetInnerHTML={{ __html: renderMarkdown(clean) }} />
                     {chart && <ChartBlock spec={chart} />}
+
+                    {/* Inline options (Q2 multiple choice) — only on last assistant message while awaiting response */}
+                    {isLastAssistant && inlineOptions.length > 0 && !streaming && (
+                      <div className="mt-5 space-y-3">
+                        <div className="flex flex-wrap gap-2">
+                          {inlineOptions.map(opt => (
+                            <button key={opt} onClick={() => setSelectedOption(prev => prev === opt ? "" : opt)}
+                              className={`px-4 py-2 text-xs border transition-all ${selectedOption === opt ? "border-accent bg-accent/10 text-accent" : "border-mist text-slate hover:border-accent hover:text-accent"}`}>
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                        <textarea
+                          value={optionFreeText}
+                          onChange={e => setOptionFreeText(e.target.value)}
+                          placeholder="Add more detail (optional)…"
+                          rows={2}
+                          className="w-full border border-mist bg-white/60 px-3 py-2 text-xs text-ink placeholder-slate/50 focus:outline-none focus:border-accent transition-colors resize-none"
+                        />
+                        <div className="flex gap-3">
+                          <button
+                            disabled={!selectedOption || streaming}
+                            onClick={() => {
+                              const msg = optionFreeText.trim()
+                                ? `${selectedOption}. ${optionFreeText.trim()}`
+                                : selectedOption;
+                              const newMessages = [...messages, { role: "user" as const, content: msg }];
+                              setMessages(newMessages);
+                              setInlineOptions([]);
+                              setSelectedOption("");
+                              setOptionFreeText("");
+                              streamResponse(newMessages);
+                            }}
+                            className="flex-1 bg-ink text-paper text-xs py-2.5 hover:bg-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                            Continue with Scaler analysis <ArrowRight size={13} />
+                          </button>
+                          <button onClick={() => { setSummaryOpen(true); setSummaryStatus("idle"); }}
+                            className="border border-mist text-slate text-xs px-4 py-2.5 hover:border-ink hover:text-ink transition-all flex items-center gap-2">
+                            <FileText size={13} /> Get summary
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Summary + continue buttons on chart responses (no inline options) */}
+                    {isLastAssistant && chart && inlineOptions.length === 0 && !streaming && !analysisComplete && (
+                      <div className="mt-4 flex gap-3">
+                        <button onClick={() => {
+                          const msg = "Please continue with the full analysis.";
+                          const newMessages = [...messages, { role: "user" as const, content: msg }];
+                          setMessages(newMessages);
+                          streamResponse(newMessages);
+                        }}
+                          className="flex-1 bg-ink text-paper text-xs py-2.5 hover:bg-accent transition-colors flex items-center justify-center gap-2">
+                          Continue with Scaler analysis <ArrowRight size={13} />
+                        </button>
+                        <button onClick={() => { setSummaryOpen(true); setSummaryStatus("idle"); }}
+                          className="border border-mist text-slate text-xs px-4 py-2.5 hover:border-ink hover:text-ink transition-all flex items-center gap-2">
+                          <FileText size={13} /> Get summary
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -875,6 +1024,37 @@ export default function Home() {
               )}
             </div>
           )}
+        {/* Summary modal */}
+        {summaryOpen && (
+          <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50 flex items-center justify-center px-6">
+            <div className="bg-paper border border-mist p-6 w-full max-w-sm shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm font-medium text-ink">Get Word doc summary</p>
+                <button onClick={() => setSummaryOpen(false)} className="text-slate hover:text-ink"><X size={16} /></button>
+              </div>
+              <p className="text-xs text-slate mb-4 leading-relaxed">We will send a Word doc summary of the analysis so far to your inbox.</p>
+              {summaryStatus === "sent" ? (
+                <p className="text-xs text-accent font-medium">✓ Sent — check your inbox.</p>
+              ) : (
+                <>
+                  <input
+                    type="email"
+                    value={summaryEmail}
+                    onChange={e => setSummaryEmail(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && summaryEmail.trim()) sendSummary(); }}
+                    placeholder="you@yourcompany.com"
+                    className="w-full border border-mist px-3 py-2.5 text-sm text-ink placeholder-slate/50 focus:outline-none focus:border-accent mb-3"
+                  />
+                  <button onClick={sendSummary} disabled={!summaryEmail.trim() || summaryStatus === "sending"}
+                    className="w-full bg-accent text-paper text-xs py-2.5 hover:opacity-90 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2">
+                    <Send size={12} />{summaryStatus === "sending" ? "Sending…" : "Send to my inbox"}
+                  </button>
+                  {summaryStatus === "error" && <p className="text-xs text-red-500 mt-2">Something went wrong. Please try again.</p>}
+                </>
+              )}
+            </div>
+          </div>
+        )}
         </main>
       )}
     </div>
