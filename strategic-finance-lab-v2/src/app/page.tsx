@@ -113,6 +113,9 @@ function hidePartialTags(text: string): string {
     const idx = clean.indexOf(tag);
     if (idx !== -1) clean = clean.substring(0, idx);
   });
+  // Strip the Word doc prompt sentence — handled in UI instead
+  clean = clean.replace(/I have prepared a Word document[^.]*\./gi, "").trim();
+  clean = clean.replace(/I can prepare a full Word document[^.]*\./gi, "").trim();
   return clean.trim();
 }
 
@@ -236,6 +239,8 @@ export default function Home() {
   const [reportEmail, setReportEmail] = useState("");
   const [reportStatus, setReportStatus] = useState<EmailStatus>("idle");
   const [collectedEmail, setCollectedEmail] = useState("");
+  const [pendingDeepDive, setPendingDeepDive] = useState<Domain | null>(null);
+  const [deepDiveContext, setDeepDiveContext] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -355,10 +360,13 @@ export default function Home() {
     await streamResponse(newMsgs, nextPhase);
   }
 
-  async function startDeepDive(domain: Domain) {
+  async function startDeepDive(domain: Domain, context?: string) {
     setSelectedDeepDive(domain);
+    setPendingDeepDive(null);
+    setDeepDiveContext("");
     setStage("deepdive");
-    const deepDiveMsg = `Please deliver a deep dive analysis on the ${domain.label} domain.`;
+    const contextLine = context?.trim() ? `\n\nAdditional context from the user: ${context.trim()}` : "";
+    const deepDiveMsg = `Please deliver a deep dive analysis on the ${domain.label} domain.${contextLine}`;
     const newMsgs: Message[] = [...messages, { role: "user", content: deepDiveMsg }];
     setMessages(newMsgs);
     await streamResponse(newMsgs, "complete");
@@ -382,7 +390,7 @@ export default function Home() {
     } catch { /* silent — don't block UX */ }
   }
 
-  async function sendEmail(email: string, choice: "report" | "both", onSuccess: () => void, onError: () => void) {
+  async function sendEmail(email: string, choice: "report", onSuccess: () => void, onError: () => void) {
     collectEmail(email);
     const allText = messages.filter(m => m.role === "assistant").map(m => m.content).join("\n\n---\n\n");
     const subsectorLabel = SUBSECTORS.find(s => s.id === selectedSubsector)?.label || "Business";
@@ -669,25 +677,51 @@ export default function Home() {
                     {/* Deep dive domain selection — shown after diagnostic complete */}
                     {isLastAssistant && (diagnosticPhase === "complete" || messages.filter(m => m.role === "assistant").length >= 4) && stage === "diagnostic" && !streaming && (
                       <div className="mt-8 space-y-4">
-                        <div className="border border-accent/20 bg-accent/5 p-5">
-                          <p className="text-sm font-medium text-ink mb-2">Diagnostic complete — go deeper</p>
-                          <p className="text-xs text-slate leading-relaxed">Select a domain to explore the structural picture in depth — and see how the economics play out across scenarios.</p>
-  
-                        </div>
-                        <p className="text-xs font-mono text-slate uppercase tracking-wide">Go deeper on a domain</p>
-                        <div className="space-y-2">
-                          {DOMAINS.map(d => (
-                            <button key={d.id} onClick={() => startDeepDive(d)}
-                              className="w-full text-left border border-mist px-5 py-4 hover:border-accent hover:bg-card/60 transition-all group flex items-center justify-between">
-                              <div>
-                                <p className="text-xs font-mono text-accent mb-1">{String(d.id).padStart(2, "0")}</p>
-                                <p className="text-sm font-medium text-ink group-hover:text-accent transition-colors">{d.label}</p>
-                                <p className="text-xs text-slate mt-0.5">{d.question}</p>
-                              </div>
-                              <ArrowRight size={15} className="text-mist group-hover:text-accent flex-shrink-0" />
-                            </button>
-                          ))}
-                        </div>
+                        {pendingDeepDive ? (
+                          /* Context input — shown after selecting a domain */
+                          <div className="border border-accent/30 bg-card/60 p-5 space-y-4">
+                            <div>
+                              <p className="text-xs font-mono text-accent uppercase tracking-wide mb-1">{pendingDeepDive.label}</p>
+                              <p className="text-sm font-medium text-ink">Anything specific you want the deep dive to focus on?</p>
+                              <p className="text-xs text-slate mt-1 leading-relaxed">Optional — leave blank to proceed with what Scaler already knows.</p>
+                            </div>
+                            <textarea
+                              value={deepDiveContext}
+                              onChange={e => setDeepDiveContext(e.target.value)}
+                              placeholder="e.g. We are considering entering Germany next quarter. Our current banking partner has indicated they may not support this..."
+                              rows={3}
+                              className="w-full border border-mist px-3 py-2.5 text-sm text-ink placeholder-slate/50 focus:outline-none focus:border-accent resize-none leading-relaxed"
+                            />
+                            <div className="flex items-center gap-3">
+                              <button onClick={() => startDeepDive(pendingDeepDive, deepDiveContext)}
+                                className="inline-flex items-center gap-2 bg-card text-ink text-xs px-5 py-2.5 border border-accent hover:bg-accent hover:text-paper transition-colors">
+                                Begin deep dive <ArrowRight size={12} />
+                              </button>
+                              <button onClick={() => setPendingDeepDive(null)} className="text-xs text-slate hover:text-ink transition-colors">← Back</button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* Domain selection */
+                          <>
+                            <div className="border-l-2 border-accent pl-4 py-1">
+                              <p className="text-sm text-ink leading-relaxed">The diagnostic is complete. Select a domain to go deeper — Scaler will give you the full structural picture, the conditions that must hold, and a scenario model.</p>
+                            </div>
+                            <p className="text-xs font-mono text-slate uppercase tracking-wide">Go deeper on a domain</p>
+                            <div className="space-y-2">
+                              {DOMAINS.map(d => (
+                                <button key={d.id} onClick={() => setPendingDeepDive(d)}
+                                  className="w-full text-left border border-mist px-5 py-4 hover:border-accent hover:bg-card/60 transition-all group flex items-center justify-between">
+                                  <div>
+                                    <p className="text-xs font-mono text-accent mb-1">{String(d.id).padStart(2, "0")}</p>
+                                    <p className="text-sm font-medium text-ink group-hover:text-accent transition-colors">{d.label}</p>
+                                    <p className="text-xs text-slate mt-0.5">{d.question}</p>
+                                  </div>
+                                  <ArrowRight size={15} className="text-mist group-hover:text-accent flex-shrink-0" />
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
 
@@ -696,7 +730,7 @@ export default function Home() {
                       <div className="mt-8 border border-accent/20 bg-accent/5 p-5 space-y-4">
                         <div>
                           <p className="text-sm font-medium text-ink mb-1">Deep dive complete</p>
-                          <p className="text-xs text-slate leading-relaxed">Receive the full Word document and financial model by email.</p>
+                          <p className="text-xs text-slate leading-relaxed">Receive your full diagnostic report as a Word document by email.</p>
                         </div>
                         {reportStatus === "sent" ? (
                           <div className="space-y-3">
@@ -713,10 +747,10 @@ export default function Home() {
                               className="flex-1 border border-mist px-3 py-2 text-xs text-ink placeholder-slate/50 focus:outline-none focus:border-accent" />
                             <button onClick={() => {
                               setReportStatus("sending");
-                              sendEmail(reportEmail, "both", () => setReportStatus("sent"), () => setReportStatus("error"));
+                              sendEmail(reportEmail, "report", () => setReportStatus("sent"), () => setReportStatus("error"));
                             }} disabled={!reportEmail.trim() || reportStatus === "sending"}
                               className="inline-flex items-center gap-1.5 bg-accent text-paper px-4 py-2 text-xs hover:opacity-90 disabled:opacity-40 whitespace-nowrap">
-                              <Send size={11} /> {reportStatus === "sending" ? "Sending…" : "Send report + model"}
+                              <Send size={11} /> {reportStatus === "sending" ? "Sending…" : "Send to my inbox"}
                             </button>
                           </div>
                         )}
@@ -767,7 +801,7 @@ export default function Home() {
             </div>
             <div className="opacity-0 animate-fade-up" style={{ animationFillMode: "forwards", animationDelay: "0.3s" }}>
               <p className="text-slate text-base mb-3 leading-relaxed">
-                Your report and financial model are on their way to your inbox.
+                Your diagnostic report is on its way to your inbox.
               </p>
               <p className="text-slate text-base mb-8 leading-relaxed">
                 If anything in the diagnostic raised a question you want to think through further, I am happy to do that with you — no charge, no pitch. Scaler is designed to surface the right questions; sometimes the most useful thing is a 30-minute conversation to work through what they mean for your specific situation.
@@ -776,7 +810,7 @@ export default function Home() {
 
             <div className="opacity-0 animate-fade-up border border-mist p-6 mb-8" style={{ animationFillMode: "forwards", animationDelay: "0.4s" }}>
               <p className="text-xs font-mono text-accent uppercase tracking-wide mb-4">Get in touch</p>
-              <p className="text-sm font-medium text-ink mb-1">Martin Kode</p>
+              <p className="text-sm font-medium text-ink mb-1">Martin Koderisch</p>
               <p className="text-xs text-slate mb-3">Founder, Scalepoint Partners</p>
               <div className="space-y-2">
                 <p className="text-sm text-ink">
