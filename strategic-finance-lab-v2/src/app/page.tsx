@@ -116,7 +116,8 @@ function hidePartialTags(text: string): string {
   // Strip sentences handled in UI — don't show in chat bubble
   clean = clean.replace(/I have prepared a Word document[^.]*\./gi, "").trim();
   clean = clean.replace(/I can prepare a full Word document[^.]*\./gi, "").trim();
-  clean = clean.replace(/Select a domain below[^.]*\./gi, "").trim();
+  clean = clean.replace(/Select a domain below[^\n]*/gi, "").trim();
+  clean = clean.replace(/The deep dive will give you[^\n]*/gi, "").trim();
   clean = clean.replace(/That is the full picture on this domain[^.]*\./gi, "").trim();
   return clean.trim();
 }
@@ -269,11 +270,7 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (messagesEndRef.current) {
-      const el = messagesEndRef.current;
-      const offset = el.getBoundingClientRect().top + window.scrollY - (window.innerHeight * 0.35);
-      window.scrollTo({ top: Math.max(0, offset), behavior: "smooth" });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamedText]);
 
   useEffect(() => {
@@ -690,16 +687,10 @@ export default function Home() {
                         <textarea value={optionFreeText} onChange={e => setOptionFreeText(e.target.value)}
                           placeholder="Add more detail (optional)…" rows={2}
                           className="w-full border border-slate/30 bg-white px-3 py-2 text-xs text-paper placeholder-slate focus:outline-none focus:border-accent resize-none" />
-                        <div className="flex gap-3">
-                          <button disabled={!selectedOption || streaming} onClick={submitOption}
-                            className="flex-1 bg-card text-ink text-xs py-2.5 hover:bg-accent hover:text-paper transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                            Continue <ArrowRight size={13} />
-                          </button>
-                          <button onClick={() => setSummaryOpen(true)}
-                            className="border border-mist text-slate text-xs px-4 py-2.5 hover:border-ink hover:text-ink transition-all flex items-center gap-2">
-                            <FileText size={13} /> Get summary
-                          </button>
-                        </div>
+                        <button disabled={!selectedOption || streaming} onClick={submitOption}
+                          className="w-full bg-white text-paper text-xs py-3 hover:bg-accent hover:text-paper transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-slate/20">
+                          Continue <ArrowRight size={13} />
+                        </button>
                       </div>
                     )}
 
@@ -814,17 +805,15 @@ export default function Home() {
                 <p className="text-sm text-accent font-medium">✓ On its way — check your inbox.</p>
               ) : (
                 <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <input type="email" value={reportEmail} onChange={e => setReportEmail(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter" && reportEmail.trim()) { setReportStatus("sending"); sendEmail(reportEmail, "report", () => setReportStatus("sent"), () => setReportStatus("error")); }}}
-                      placeholder="you@yourcompany.com"
-                      className="flex-1 border border-slate/30 bg-white px-3 py-2.5 text-sm text-paper placeholder-slate focus:outline-none focus:border-accent" />
-                    <button onClick={() => { setReportStatus("sending"); sendEmail(reportEmail, "report", () => setReportStatus("sent"), () => setReportStatus("error")); }}
-                      disabled={!reportEmail.trim() || reportStatus === "sending"}
-                      className="inline-flex items-center gap-1.5 bg-accent text-paper px-5 py-2.5 text-sm hover:opacity-90 disabled:opacity-40 whitespace-nowrap font-medium">
-                      <Send size={13} /> {reportStatus === "sending" ? "Sending…" : "Send to my inbox"}
-                    </button>
-                  </div>
+                  <input type="email" value={reportEmail} onChange={e => setReportEmail(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && reportEmail.trim()) { setReportStatus("sending"); sendEmail(reportEmail, "report", () => setReportStatus("sent"), () => setReportStatus("error")); }}}
+                    placeholder="you@yourcompany.com"
+                    className="w-full border border-slate/30 bg-white px-3 py-2.5 text-sm text-paper placeholder-slate focus:outline-none focus:border-accent" />
+                  <button onClick={() => { setReportStatus("sending"); sendEmail(reportEmail, "report", () => setReportStatus("sent"), () => setReportStatus("error")); }}
+                    disabled={!reportEmail.trim() || reportStatus === "sending"}
+                    className="w-full flex items-center justify-center gap-1.5 bg-accent text-paper px-5 py-3 text-sm hover:opacity-90 disabled:opacity-40 font-medium">
+                    <Send size={13} /> {reportStatus === "sending" ? "Sending…" : "Send to my inbox"}
+                  </button>
                   {reportStatus === "error" && <p className="text-xs text-red-400">Something went wrong — try again.</p>}
                 </div>
               )}
