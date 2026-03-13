@@ -217,16 +217,17 @@ function ChartBlock({ spec }: { spec: ChartSpec }) {
 function FrameworkMap({ domainStates }: { domainStates: Record<number, DomainState> }) {
   return (
     <div className="border-b border-mist bg-paper/95 px-3 sm:px-6 py-2 sm:py-3">
-      <div className="max-w-5xl mx-auto flex items-center gap-2">
-        <span className="text-xs font-mono text-slate/40 uppercase tracking-widest mr-2 hidden sm:block">Framework</span>
-        <div className="flex flex-1 gap-2">
+      <div className="max-w-5xl mx-auto">
+        <span className="text-[10px] font-mono text-slate/40 uppercase tracking-widest hidden sm:block mb-1.5">Framework</span>
+        {/* Mobile: 3+2 grid. Desktop: single row */}
+        <div className="grid grid-cols-3 sm:flex gap-1.5 sm:gap-2">
           {DOMAINS.map(d => {
             const state = domainStates[d.id] || "inactive";
             return (
               <div key={d.id} title={d.question}
-                className={`flex-1 px-1 sm:px-2 py-1 sm:py-1.5 text-center transition-all duration-500 border ${state === "active" ? "border-accent bg-accent/10 text-accent" : state === "touched" ? "border-accent/30 bg-accent/5 text-slate" : "border-mist bg-transparent text-slate/30"}`}>
-                <div className={`text-[10px] sm:text-xs font-mono leading-tight truncate ${state === "active" ? "font-medium" : ""}`}>{d.short}</div>
-                <div className="flex justify-center mt-1 gap-0.5">
+                className={`px-1 sm:px-2 py-1 sm:py-1.5 text-center transition-all duration-500 border sm:flex-1 ${state === "active" ? "border-accent bg-accent/10 text-accent" : state === "touched" ? "border-accent/30 bg-accent/5 text-slate" : "border-mist bg-transparent text-slate/30"}`}>
+                <div className={`text-[9px] sm:text-xs font-mono leading-tight ${state === "active" ? "font-medium" : ""}`}>{d.short}</div>
+                <div className="flex justify-center mt-0.5 gap-0.5">
                   {[...Array(3)].map((_, i) => (
                     <div key={i} className={`w-1 h-1 rounded-full transition-all duration-300 ${state === "active" ? "bg-accent" : state === "touched" && i === 0 ? "bg-accent/40" : "bg-mist"}`} />
                   ))}
@@ -274,8 +275,12 @@ export default function Home() {
   }, [messages, streamedText]);
 
   useEffect(() => {
-    if (stage === "intake") window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [intakeStep, stage]);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [stage]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [intakeStep]);
 
   function updateDomains(text: string) {
     const tagged = extractDomains(text);
@@ -441,7 +446,7 @@ export default function Home() {
 
   // ── RENDER ───────────────────────────────────────────────────────────────
   const showHeader = stage !== "landing";
-  const showFramework = stage === "diagnostic" || stage === "deepdive";
+  const showFramework = stage !== "landing";
 
   return (
     <div className="min-h-screen bg-paper">
@@ -524,7 +529,7 @@ export default function Home() {
 
       {/* ── SUBSECTOR ── */}
       {stage === "subsector" && (
-        <main className="min-h-screen pt-20 sm:pt-24 pb-12 px-4 sm:px-6">
+        <main className="min-h-screen pt-52 sm:pt-44 pb-12 px-4 sm:px-6">
           <div className="max-w-2xl mx-auto">
             <div className="opacity-0 animate-fade-up mb-8" style={{ animationFillMode: "forwards" }}>
               <p className="font-mono text-xs text-accent tracking-widest uppercase mb-3">Step 1 of 5</p>
@@ -551,7 +556,7 @@ export default function Home() {
 
       {/* ── INTAKE ── */}
       {stage === "intake" && selectedSubsector && (
-        <main className="min-h-screen pt-20 sm:pt-24 pb-12 px-4 sm:px-6">
+        <main className="min-h-screen pt-52 sm:pt-44 pb-12 px-4 sm:px-6">
           <div className="max-w-xl mx-auto">
             {/* Progress bar */}
             <div className="opacity-0 animate-fade-up mb-8" style={{ animationFillMode: "forwards" }}>
@@ -648,7 +653,7 @@ export default function Home() {
 
       {/* ── DIAGNOSTIC + DEEP DIVE ── */}
       {(stage === "diagnostic" || stage === "deepdive") && (
-        <main className={`pb-0 min-h-screen flex flex-col ${showFramework ? "pt-40 sm:pt-36" : "pt-20"}`}>
+        <main className={`pb-0 min-h-screen flex flex-col ${showFramework ? "pt-52 sm:pt-44" : "pt-20"}`}>
           <div className="flex-1 overflow-y-auto px-6 py-8">
             <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-8">
 
