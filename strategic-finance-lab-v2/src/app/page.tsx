@@ -215,7 +215,7 @@ function ChartBlock({ spec }: { spec: ChartSpec }) {
 // ── FRAMEWORK MAP ──────────────────────────────────────────────────────────
 function FrameworkMap({ domainStates }: { domainStates: Record<number, DomainState> }) {
   return (
-    <div className="border-b border-mist bg-paper/95 px-6 py-3">
+    <div className="border-b border-mist bg-paper/95 px-3 sm:px-6 py-2 sm:py-3">
       <div className="max-w-5xl mx-auto flex items-center gap-2">
         <span className="text-xs font-mono text-slate/40 uppercase tracking-widest mr-2 hidden sm:block">Framework</span>
         <div className="flex flex-1 gap-2">
@@ -223,8 +223,8 @@ function FrameworkMap({ domainStates }: { domainStates: Record<number, DomainSta
             const state = domainStates[d.id] || "inactive";
             return (
               <div key={d.id} title={d.question}
-                className={`flex-1 px-2 py-1.5 text-center transition-all duration-500 border ${state === "active" ? "border-accent bg-accent/10 text-accent" : state === "touched" ? "border-accent/30 bg-accent/5 text-slate" : "border-mist bg-transparent text-slate/30"}`}>
-                <div className={`text-xs font-mono leading-tight truncate ${state === "active" ? "font-medium" : ""}`}>{d.short}</div>
+                className={`flex-1 px-1 sm:px-2 py-1 sm:py-1.5 text-center transition-all duration-500 border ${state === "active" ? "border-accent bg-accent/10 text-accent" : state === "touched" ? "border-accent/30 bg-accent/5 text-slate" : "border-mist bg-transparent text-slate/30"}`}>
+                <div className={`text-[10px] sm:text-xs font-mono leading-tight truncate ${state === "active" ? "font-medium" : ""}`}>{d.short}</div>
                 <div className="flex justify-center mt-1 gap-0.5">
                   {[...Array(3)].map((_, i) => (
                     <div key={i} className={`w-1 h-1 rounded-full transition-all duration-300 ${state === "active" ? "bg-accent" : state === "touched" && i === 0 ? "bg-accent/40" : "bg-mist"}`} />
@@ -466,29 +466,29 @@ export default function Home() {
 
       {/* ── LANDING ── */}
       {stage === "landing" && (
-        <main className="min-h-screen flex flex-col items-center justify-center px-6">
+        <main className="min-h-screen flex flex-col justify-center px-4 sm:px-6 py-12">
           <div className="max-w-2xl mx-auto w-full">
             <div className="opacity-0 animate-fade-up" style={{ animationFillMode: "forwards", animationDelay: "0.1s" }}>
               <p className="font-mono text-xs text-accent tracking-widest uppercase mb-6">Pilot — Invitation Only</p>
             </div>
             <div className="opacity-0 animate-fade-up" style={{ animationFillMode: "forwards", animationDelay: "0.2s" }}>
-              <h1 className="font-display text-5xl font-medium text-ink mb-6 leading-tight">Scaler</h1>
+              <h1 className="font-display text-4xl sm:text-5xl font-medium text-ink mb-5 leading-tight">Scaler</h1>
             </div>
             <div className="opacity-0 animate-fade-up" style={{ animationFillMode: "forwards", animationDelay: "0.3s" }}>
-              <p className="text-slate text-lg mb-4 leading-relaxed">A structural diagnostic for payments and fintech businesses at Series A to C.</p>
-              <p className="text-slate text-base mb-8 leading-relaxed">Scaler assesses your business across five structural domains and tells you where the real constraints are — not a generic report, a specific verdict on your business.</p>
+              <p className="text-slate text-base sm:text-lg mb-3 leading-relaxed">A structural diagnostic for payments and fintech businesses at Series A to C.</p>
+              <p className="text-slate text-sm sm:text-base mb-6 leading-relaxed">Scaler assesses your business across five structural domains and tells you where the real constraints are — not a generic report, a specific verdict on your business.</p>
             </div>
 
             {/* How it works */}
-            <div className="opacity-0 animate-fade-up border border-mist p-6 mb-8" style={{ animationFillMode: "forwards", animationDelay: "0.4s" }}>
+            <div className="opacity-0 animate-fade-up border border-mist p-4 sm:p-6 mb-6" style={{ animationFillMode: "forwards", animationDelay: "0.4s" }}>
               <p className="text-xs font-mono text-accent uppercase tracking-wide mb-4">How it works</p>
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                 {[
                   { n: "01", t: "Describe your business", d: "Four quick questions about your model, scale and biggest concern." },
                   { n: "02", t: "Scaler asks three questions", d: "Targeted diagnostic questions to establish the full picture." },
-                  { n: "03", t: "Receive your diagnostic", d: "A verdict across five structural domains. Word doc summary by email. Option to go deeper on any domain." },
+                  { n: "03", t: "Receive your diagnostic", d: "A verdict across five structural domains, with the option to go deeper on any domain." },
                 ].map(s => (
-                  <div key={s.n}>
+                  <div key={s.n} className="pb-3 sm:pb-0 border-b sm:border-b-0 border-mist/40 last:border-b-0">
                     <p className="font-mono text-xs text-accent mb-2">{s.n}</p>
                     <p className="text-sm font-medium text-ink mb-1">{s.t}</p>
                     <p className="text-xs text-slate leading-relaxed">{s.d}</p>
@@ -500,9 +500,9 @@ export default function Home() {
             {/* Five domains */}
             <div className="opacity-0 animate-fade-up mb-10" style={{ animationFillMode: "forwards", animationDelay: "0.5s" }}>
               <p className="text-xs font-mono text-accent uppercase tracking-widest mb-4">Five domains assessed</p>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 sm:flex gap-2">
                 {DOMAINS.map(d => (
-                  <div key={d.id} className="flex-1 border border-slate/40 bg-card px-3 py-3 text-center">
+                  <div key={d.id} className="border border-slate/40 bg-card px-3 py-3 text-center sm:flex-1">
                     <p className="text-xs font-mono text-ink leading-tight">{d.short}</p>
                   </div>
                 ))}
@@ -511,7 +511,7 @@ export default function Home() {
 
             <div className="opacity-0 animate-fade-up" style={{ animationFillMode: "forwards", animationDelay: "0.6s" }}>
               <button onClick={() => setStage("subsector")}
-                className="inline-flex items-center gap-3 bg-white text-paper px-8 py-4 text-sm tracking-wide hover:bg-accent hover:text-paper transition-colors duration-300 border border-slate/20">
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-white text-paper px-8 py-4 text-sm tracking-wide hover:bg-accent hover:text-paper transition-colors duration-300 border border-slate/20">
                 Begin diagnostic <ArrowRight size={16} />
               </button>
             </div>
@@ -527,11 +527,11 @@ export default function Home() {
 
       {/* ── SUBSECTOR ── */}
       {stage === "subsector" && (
-        <main className="min-h-screen pt-24 pb-16 px-6">
+        <main className="min-h-screen pt-20 sm:pt-24 pb-12 px-4 sm:px-6">
           <div className="max-w-2xl mx-auto">
             <div className="opacity-0 animate-fade-up mb-8" style={{ animationFillMode: "forwards" }}>
               <p className="font-mono text-xs text-accent tracking-widest uppercase mb-3">Step 1 of 5</p>
-              <h2 className="font-display text-3xl font-medium text-ink mb-3">Which best describes your business?</h2>
+              <h2 className="font-display text-2xl sm:text-3xl font-medium text-ink mb-3">Which best describes your business?</h2>
               <p className="text-slate text-sm">Select your payments or fintech category.</p>
             </div>
             <div className="space-y-2">
@@ -554,7 +554,7 @@ export default function Home() {
 
       {/* ── INTAKE ── */}
       {stage === "intake" && selectedSubsector && (
-        <main className="min-h-screen pt-24 pb-16 px-6">
+        <main className="min-h-screen pt-20 sm:pt-24 pb-12 px-4 sm:px-6">
           <div className="max-w-xl mx-auto">
             {/* Progress bar */}
             <div className="opacity-0 animate-fade-up mb-8" style={{ animationFillMode: "forwards" }}>
@@ -567,7 +567,7 @@ export default function Home() {
             </div>
 
             <div className="opacity-0 animate-fade-up" style={{ animationFillMode: "forwards", animationDelay: "0.1s" }}>
-              <h2 className="font-display text-2xl font-medium text-ink mb-6">
+              <h2 className="font-display text-xl sm:text-2xl font-medium text-ink mb-5">
                 {intakeStep === 0 && "What best describes how your business generates revenue?"}
                 {intakeStep === 1 && "Where are you today?"}
                 {intakeStep === 2 && "What is your biggest concern right now?"}
@@ -651,9 +651,9 @@ export default function Home() {
 
       {/* ── DIAGNOSTIC + DEEP DIVE ── */}
       {(stage === "diagnostic" || stage === "deepdive") && (
-        <main className={`pb-0 min-h-screen flex flex-col ${showFramework ? "pt-36" : "pt-20"}`}>
+        <main className={`pb-0 min-h-screen flex flex-col ${showFramework ? "pt-40 sm:pt-36" : "pt-20"}`}>
           <div className="flex-1 overflow-y-auto px-6 py-8">
-            <div className="max-w-3xl mx-auto space-y-8">
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-8">
 
               {messages.map((m, i) => {
                 const isLastAssistant = m.role === "assistant" && i === messages.length - 1;
@@ -793,13 +793,13 @@ export default function Home() {
 
       {/* ── COMPLETION SCREEN ── */}
       {stage === "complete" && (
-        <main className="min-h-screen px-6 py-20">
+        <main className="min-h-screen px-4 sm:px-6 py-16 sm:py-20">
           <div className="max-w-lg mx-auto w-full space-y-10">
 
             {/* Heading */}
             <div className="opacity-0 animate-fade-up" style={{ animationFillMode: "forwards", animationDelay: "0.1s" }}>
               <p className="font-mono text-xs text-accent tracking-widest uppercase mb-4">Scaler · Complete</p>
-              <h1 className="font-display text-4xl font-medium text-ink mb-4 leading-tight">The diagnostic is complete.</h1>
+              <h1 className="font-display text-3xl sm:text-4xl font-medium text-ink mb-4 leading-tight">The diagnostic is complete.</h1>
               <p className="text-slate text-base leading-relaxed">
                 Scaler has mapped the structural picture. The questions it has surfaced are the ones worth sitting with — they tend to be more useful than the answers.
               </p>
